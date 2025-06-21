@@ -1,0 +1,66 @@
+<template>
+    <lightning-card title="Zarządzanie Frekwencją" icon-name="standard:person_account">
+        <div class="slds-p-horizontal_medium">
+            <div class="slds-grid slds-gutters slds-m-bottom_medium">
+                <div class="slds-col slds-size_1-of-3">
+                    <lightning-combobox
+                        label="Wybierz Drużynę"
+                        value={selectedTeamId}
+                        options={teamOptions}
+                        onchange={handleTeamChange}>
+                    </lightning-combobox>
+                </div>
+                <div class="slds-col slds-size_1-of-3">
+                    <lightning-combobox
+                        label="Wybierz Trening"
+                        value={selectedTrainingId}
+                        options={trainingOptions}
+                        onchange={handleTrainingChange}>
+                    </lightning-combobox>
+                </div>
+            </div>
+
+            <template if:true={hasAttendanceData}>
+                <!-- Statystyki -->
+                <div class="slds-grid slds-gutters slds-m-bottom_medium">
+                    <div class="slds-col slds-size_1-of-4">
+                        <div class="slds-box slds-theme_success slds-text-align_center">
+                            <div class="slds-text-heading_large">{presentCount}</div>
+                            <div>Obecni</div>
+                        </div>
+                    </div>
+                    <div class="slds-col slds-size_1-of-4">
+                        <div class="slds-box slds-theme_error slds-text-align_center">
+                            <div class="slds-text-heading_large">{absentCount}</div>
+                            <div>Nieobecni</div>
+                        </div>
+                    </div>
+                    <div class="slds-col slds-size_1-of-4">
+                        <div class="slds-box slds-theme_warning slds-text-align_center">
+                            <div class="slds-text-heading_large">{excusedCount}</div>
+                            <div>Usprawiedliwieni</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabela frekwencji -->
+                <lightning-datatable
+                    key-field="Id"
+                    data={attendanceRecords}
+                    columns={columns}
+                    hide-checkbox-column="true"
+                    onsave={handleSave}
+                    oncancel={handleCancel}
+                    draft-values={draftValues}>
+                </lightning-datatable>
+            </template>
+
+            <template if:false={hasAttendanceData}>
+                <div class="slds-align_absolute-center slds-p-vertical_large">
+                    <lightning-icon icon-name="utility:info" variant="inverse" class="slds-m-right_small"></lightning-icon>
+                    <span>Wybierz drużynę i trening aby zobaczyć listę obecności</span>
+                </div>
+            </template>
+        </div>
+    </lightning-card>
+</template>

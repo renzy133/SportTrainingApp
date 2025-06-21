@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Type__c</fullName>
+    <label>Training Type</label>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Taktyczny</fullName>
+                <default>false</default>
+                <label>Taktyczny</label>
+            </value>
+            <value>
+                <fullName>Kondycyjny</fullName>
+                <default>false</default>
+                <label>Kondycyjny</label>
+            </value>
+            <value>
+                <fullName>Techniczny</fullName>
+                <default>false</default>
+                <label>Techniczny</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

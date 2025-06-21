@@ -1,0 +1,8 @@
+{
+    "salesforcedx-vscode-apex.java.home": "",
+    "salesforcedx-vscode-core.show-cli-success-msg": false,
+    "apex-pmd.enableStatic": false,
+    "apex-pmd.showErrors": false,
+    "apex-pmd.showStdOut": false,
+    "apex-pmd.showStdErr": false
+}

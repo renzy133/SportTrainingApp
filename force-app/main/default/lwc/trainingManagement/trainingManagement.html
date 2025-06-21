@@ -1,0 +1,109 @@
+<template>
+    <lightning-card title="Zarządzanie Treningami" icon-name="standard:event">
+        <div slot="actions">
+            <lightning-button 
+                label="Nowy Trening" 
+                onclick={openModal}
+                variant="brand">
+            </lightning-button>
+        </div>
+        
+        <div class="slds-p-horizontal_medium">
+            <div class="slds-grid slds-gutters slds-m-bottom_medium">
+                <div class="slds-col slds-size_1-of-3">
+                    <lightning-combobox
+                        label="Wybierz Drużynę"
+                        value={selectedTeamId}
+                        options={teamOptions}
+                        onchange={handleTeamChange}>
+                    </lightning-combobox>
+                </div>
+            </div>
+            
+            <lightning-datatable
+                key-field="Id"
+                data={trainings}
+                columns={columns}
+                hide-checkbox-column="true">
+            </lightning-datatable>
+        </div>
+    </lightning-card>
+
+    <!-- Modal -->
+    <template if:true={isModalOpen}>
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <h2 class="slds-text-heading_medium">Nowy Trening</h2>
+                    <lightning-button-icon 
+                        icon-name="utility:close" 
+                        onclick={closeModal}
+                        alternative-text="Zamknij"
+                        variant="bare-inverse"
+                        class="slds-modal__close">
+                    </lightning-button-icon>
+                </header>
+                
+                <div class="slds-modal__content slds-p-around_medium">
+                    <lightning-combobox
+                        label="Drużyna"
+                        value={newTraining.teamId}
+                        options={teamOptions}
+                        data-field="teamId"
+                        onchange={handleInputChange}
+                        required>
+                    </lightning-combobox>
+                    
+                    <lightning-input 
+                        type="date"
+                        label="Data Treningu"
+                        value={newTraining.date}
+                        data-field="date"
+                        onchange={handleInputChange}
+                        required>
+                    </lightning-input>
+                    
+                    <lightning-input 
+                        type="time"
+                        label="Godzina Rozpoczęcia"
+                        value={newTraining.startTime}
+                        data-field="startTime"
+                        onchange={handleInputChange}
+                        required>
+                    </lightning-input>
+                    
+                    <lightning-input 
+                        type="number"
+                        label="Czas Trwania (minuty)"
+                        value={newTraining.duration}
+                        data-field="duration"
+                        onchange={handleInputChange}
+                        placeholder="90">
+                    </lightning-input>
+                    
+                    <lightning-combobox
+                        label="Typ Treningu"
+                        value={newTraining.type}
+                        options={typeOptions}
+                        data-field="type"
+                        onchange={handleInputChange}
+                        required>
+                    </lightning-combobox>
+                </div>
+                
+                <footer class="slds-modal__footer">
+                    <lightning-button 
+                        label="Anuluj" 
+                        onclick={closeModal}>
+                    </lightning-button>
+                    <lightning-button 
+                        label="Zapisz" 
+                        variant="brand"
+                        onclick={handleSave}>
+                    </lightning-button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+</template>

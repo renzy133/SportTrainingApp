@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Sport__c</fullName>
+    <label>Sport</label>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Football</fullName>
+                <default>false</default>
+                <label>Football</label>
+            </value>
+            <value>
+                <fullName>Basketball</fullName>
+                <default>false</default>
+                <label>Basketball</label>
+            </value>
+            <value>
+                <fullName>Volleyball</fullName>
+                <default>false</default>
+                <label>Volleyball</label>
+            </value>
+            <value>
+                <fullName>Tennis</fullName>
+                <default>false</default>
+                <label>Tennis</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>
