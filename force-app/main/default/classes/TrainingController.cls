@@ -2,6 +2,11 @@ public class TrainingController {
     
     @AuraEnabled(cacheable=true)
     public static List<SportTraining__c> getUpcomingTrainings(Id teamId) {
+        // Добавляем проверку на null
+        if (teamId == null) {
+            return new List<SportTraining__c>();
+        }
+        
         Date today = Date.today();
         return [
             SELECT Id, Name, Training_Date__c, Start_Time__c, Duration__c, Type__c, Team__r.Name
@@ -18,8 +23,11 @@ public class TrainingController {
             SportTraining__c newTraining = new SportTraining__c(
                 Team__c = teamId,
                 Training_Date__c = trainingDate,
-                Start_Time__c = Time.newInstance(Integer.valueOf(startTime.split(':')[0]), Integer.valueOf(startTime.split(':')[1]), 0, 0),
-                Duration__c = duration,
+Start_Time__c = Time.newInstance(
+    startTime.contains(':') ? Integer.valueOf(startTime.split(':')[0]) : 9,
+    startTime.contains(':') ? Integer.valueOf(startTime.split(':')[1]) : 0,
+    0, 0
+),                Duration__c = duration,
                 Type__c = trainingType
             );
             insert newTraining;

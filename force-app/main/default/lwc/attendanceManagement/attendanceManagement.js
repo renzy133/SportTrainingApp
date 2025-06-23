@@ -75,7 +75,7 @@ export default class AttendanceManagement extends LightningElement {
     @wire(getTrainingAttendance, { trainingId: '$selectedTrainingId' })
     wiredAttendance(result) {
         this.wiredAttendanceResult = result;
-        if (result.data) {
+        if (result.data && this.selectedTrainingId) {
             this.attendanceRecords = result.data.map(record => ({
                 ...record,
                 PlayerName: record.Player__r ? record.Player__r.Name : '',
@@ -116,10 +116,8 @@ export default class AttendanceManagement extends LightningElement {
 
             this.showToast('Sukces', 'Lista obecności została zaktualizowana', 'success');
             
-            // Clear draft values
             this.template.querySelector('lightning-datatable').draftValues = [];
             
-            // Refresh the data
             refreshApex(this.wiredAttendanceResult);
             
         } catch (error) {
@@ -128,7 +126,6 @@ export default class AttendanceManagement extends LightningElement {
     }
 
     handleCancel() {
-        // Clear draft values
         this.template.querySelector('lightning-datatable').draftValues = [];
     }
 

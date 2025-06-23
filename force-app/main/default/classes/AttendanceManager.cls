@@ -3,22 +3,29 @@ public class AttendanceManager {
     @AuraEnabled
     public static void createAttendanceRecords(Id trainingId) {
         try {
-            // Получаем тренировку и команду
-            SportTraining__c training = [
+            if (trainingId == null) {
+                return;
+            }
+            
+            List<SportTraining__c> trainings = [
                 SELECT Team__c 
                 FROM SportTraining__c 
                 WHERE Id = :trainingId 
                 LIMIT 1
             ];
             
-            // Получаем всех активных игроков команды
+            if (trainings.isEmpty() || trainings[0].Team__c == null) {
+                return;
+            }
+            
+            SportTraining__c training = trainings[0];
+            
             List<SportPlayer__c> players = [
                 SELECT Id 
                 FROM SportPlayer__c 
                 WHERE Team__c = :training.Team__c
             ];
             
-            // Создаем записи посещаемости
             List<SportAttendance__c> attendanceList = new List<SportAttendance__c>();
             for(SportPlayer__c player : players) {
                 attendanceList.add(new SportAttendance__c(
@@ -39,6 +46,10 @@ public class AttendanceManager {
     
     @AuraEnabled
     public static List<SportAttendance__c> getTrainingAttendance(Id trainingId) {
+        if (trainingId == null) {
+            return new List<SportAttendance__c>();
+        }
+        
         return [
             SELECT Id, Player__c, Player__r.Name, Status__c, Notes__c
             FROM SportAttendance__c 

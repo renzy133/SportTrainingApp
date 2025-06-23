@@ -51,7 +51,7 @@ export default class TrainingManagement extends LightningElement {
     @wire(getUpcomingTrainings, { teamId: '$selectedTeamId' })
     wiredTrainings(result) {
         this.wiredTrainingsResult = result;
-        if (result.data) {
+        if (result.data && this.selectedTeamId) {
             this.trainings = result.data.map(training => ({
                 ...training,
                 TeamName: training.Team__r ? training.Team__r.Name : ''
