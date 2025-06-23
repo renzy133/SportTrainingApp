@@ -4,7 +4,6 @@ public class UserRoleHelper {
     public static String getCurrentUserRole() {
         Id currentUserId = UserInfo.getUserId();
         
-        // Отладка - получаем все Permission Sets пользователя
         List<PermissionSetAssignment> allAssignments = [
             SELECT PermissionSet.Name, PermissionSet.Label 
             FROM PermissionSetAssignment 
@@ -122,7 +121,6 @@ public class UserRoleHelper {
         ];
     }
     
-    // Метод для отладки - можно вызвать из Developer Console
     public static void debugUserPermissions() {
         Id currentUserId = UserInfo.getUserId();
         System.debug('Current User ID: ' + currentUserId);

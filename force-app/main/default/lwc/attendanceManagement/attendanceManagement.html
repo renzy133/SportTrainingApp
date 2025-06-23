@@ -20,18 +20,25 @@
                 </div>
                 <div class="slds-col slds-size_1-of-3 slds-text-align_right">
                     <template if:true={hasAttendanceData}>
-                        <lightning-button-group>
-                            <lightning-button 
-                                label="Wszyscy obecni" 
-                                onclick={markAllPresent}
-                                variant="success">
-                            </lightning-button>
-                            <lightning-button 
-                                label="Wszyscy nieobecni" 
-                                onclick={markAllAbsent}
-                                variant="destructive">
-                            </lightning-button>
-                        </lightning-button-group>
+                        <template if:true={canEdit}>
+                            <lightning-button-group>
+                                <lightning-button 
+                                    label="Wszyscy obecni" 
+                                    onclick={markAllPresent}
+                                    variant="success">
+                                </lightning-button>
+                                <lightning-button 
+                                    label="Wszyscy nieobecni" 
+                                    onclick={markAllAbsent}
+                                    variant="destructive">
+                                </lightning-button>
+                            </lightning-button-group>
+                        </template>
+                        <template if:false={canEdit}>
+                            <div class="slds-text-body_small slds-text-color_weak">
+                                Tylko do odczytu
+                            </div>
+                        </template>
                     </template>
                 </div>
             </div>

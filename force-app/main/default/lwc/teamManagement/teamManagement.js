@@ -5,6 +5,8 @@ import getActiveTeams from '@salesforce/apex/TeamController.getActiveTeams';
 import createTeam from '@salesforce/apex/TeamController.createTeam';
 import updateTeam from '@salesforce/apex/TeamController.updateTeam';
 import deleteTeam from '@salesforce/apex/TeamController.deleteTeam';
+import isCoach from '@salesforce/apex/UserRoleHelper.isCoach';
+import isAdmin from '@salesforce/apex/UserRoleHelper.isAdmin';
 
 export default class TeamManagement extends LightningElement {
     @track teams = [];
@@ -17,6 +19,7 @@ export default class TeamManagement extends LightningElement {
         category: '',
         active: true
     };
+    @track hasAccess = false;
 
     wiredTeamsResult;
 
@@ -53,6 +56,20 @@ export default class TeamManagement extends LightningElement {
         doneCallback(actions);
     }
 
+    @wire(isAdmin)
+    wiredIsAdmin({ error, data }) {
+        if (data !== undefined) {
+            this.hasAccess = data;
+        }
+    }
+
+    @wire(isCoach)
+    wiredIsCoach({ error, data }) {
+        if (data !== undefined && !this.hasAccess) {
+            this.hasAccess = data;
+        }
+    }
+
     @wire(getActiveTeams)
     wiredTeams(result) {
         this.wiredTeamsResult = result;
@@ -82,6 +99,11 @@ export default class TeamManagement extends LightningElement {
     }
 
     handleEdit(team) {
+        if (!this.hasAccess) {
+            this.showToast('Błąd', 'Nie masz uprawnień do zarządzania drużynami', 'error');
+            return;
+        }
+        
         this.isEditMode = true;
         this.editingTeamId = team.Id;
         
@@ -96,6 +118,11 @@ export default class TeamManagement extends LightningElement {
     }
 
     async handleDelete(teamId) {
+        if (!this.hasAccess) {
+            this.showToast('Błąd', 'Nie masz uprawnień do zarządzania drużynami', 'error');
+            return;
+        }
+        
         if (confirm('Czy na pewno chcesz usunąć tę drużynę?')) {
             try {
                 await deleteTeam({ teamId });
@@ -108,11 +135,14 @@ export default class TeamManagement extends LightningElement {
     }
 
     viewPlayers(teamId) {
-        // Tu możesz dodać nawigację do listy zawodników
         this.showToast('Info', 'Funkcja w przygotowaniu - lista zawodników drużyny', 'info');
     }
 
     openModal() {
+        if (!this.hasAccess) {
+            this.showToast('Błąd', 'Nie masz uprawnień do zarządzania drużynami', 'error');
+            return;
+        }
         this.isModalOpen = true;
         this.isEditMode = false;
         this.editingTeamId = null;
@@ -141,6 +171,11 @@ export default class TeamManagement extends LightningElement {
     }
 
     async handleSave() {
+        if (!this.hasAccess) {
+            this.showToast('Błąd', 'Nie masz uprawnień do zarządzania drużynami', 'error');
+            return;
+        }
+        
         try {
             if (!this.newTeam.name || !this.newTeam.sport || !this.newTeam.category) {
                 this.showToast('Błąd', 'Wszystkie pola są wymagane', 'error');

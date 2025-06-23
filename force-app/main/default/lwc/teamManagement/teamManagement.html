@@ -1,21 +1,33 @@
 <template>
     <lightning-card title="Zarządzanie Drużynami" icon-name="standard:groups">
-        <div slot="actions">
-            <lightning-button 
-                label="Nowa Drużyna" 
-                onclick={openModal}
-                variant="brand">
-            </lightning-button>
-        </div>
+        <template if:true={hasAccess}>
+            <div slot="actions">
+                <lightning-button 
+                    label="Nowa Drużyna" 
+                    onclick={openModal}
+                    variant="brand">
+                </lightning-button>
+            </div>
+        </template>
         
         <div class="slds-p-horizontal_medium">
-            <lightning-datatable
-                key-field="Id"
-                data={teams}
-                columns={columns}
-                hide-checkbox-column="true"
-                onrowaction={handleRowAction}>
-            </lightning-datatable>
+            <template if:false={hasAccess}>
+                <div class="slds-box slds-theme_warning">
+                    <div class="slds-text-body_regular">
+                        Nie masz uprawnień do zarządzania drużynami. Skontaktuj się z administratorem.
+                    </div>
+                </div>
+            </template>
+            
+            <template if:true={hasAccess}>
+                <lightning-datatable
+                    key-field="Id"
+                    data={teams}
+                    columns={columns}
+                    hide-checkbox-column="true"
+                    onrowaction={handleRowAction}>
+                </lightning-datatable>
+            </template>
         </div>
     </lightning-card>
 

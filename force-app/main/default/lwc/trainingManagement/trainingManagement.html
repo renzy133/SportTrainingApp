@@ -1,32 +1,44 @@
 <template>
     <lightning-card title="Zarządzanie Treningami" icon-name="standard:event">
-        <div slot="actions">
-            <lightning-button 
-                label="Nowy Trening" 
-                onclick={openModal}
-                variant="brand">
-            </lightning-button>
-        </div>
+        <template if:true={hasAccess}>
+            <div slot="actions">
+                <lightning-button 
+                    label="Nowy Trening" 
+                    onclick={openModal}
+                    variant="brand">
+                </lightning-button>
+            </div>
+        </template>
         
         <div class="slds-p-horizontal_medium">
-            <div class="slds-grid slds-gutters slds-m-bottom_medium">
-                <div class="slds-col slds-size_1-of-3">
-                    <lightning-combobox
-                        label="Wybierz Drużynę"
-                        value={selectedTeamId}
-                        options={teamOptions}
-                        onchange={handleTeamChange}>
-                    </lightning-combobox>
+            <template if:false={hasAccess}>
+                <div class="slds-box slds-theme_warning">
+                    <div class="slds-text-body_regular">
+                        Nie masz uprawnień do zarządzania treningami. Skontaktuj się z administratorem.
+                    </div>
                 </div>
-            </div>
+            </template>
             
-            <lightning-datatable
-                key-field="Id"
-                data={trainings}
-                columns={columns}
-                hide-checkbox-column="true"
-                onrowaction={handleRowAction}>
-            </lightning-datatable>
+            <template if:true={hasAccess}>
+                <div class="slds-grid slds-gutters slds-m-bottom_medium">
+                    <div class="slds-col slds-size_1-of-3">
+                        <lightning-combobox
+                            label="Wybierz Drużynę"
+                            value={selectedTeamId}
+                            options={teamOptions}
+                            onchange={handleTeamChange}>
+                        </lightning-combobox>
+                    </div>
+                </div>
+                
+                <lightning-datatable
+                    key-field="Id"
+                    data={trainings}
+                    columns={columns}
+                    hide-checkbox-column="true"
+                    onrowaction={handleRowAction}>
+                </lightning-datatable>
+            </template>
         </div>
     </lightning-card>
 

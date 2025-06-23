@@ -7,6 +7,8 @@ import getUpcomingTrainings from '@salesforce/apex/TrainingController.getUpcomin
 import getTrainingAttendance from '@salesforce/apex/AttendanceManager.getTrainingAttendance';
 import updateBulkAttendance from '@salesforce/apex/AttendanceManager.updateBulkAttendance';
 import getActiveTeams from '@salesforce/apex/TeamController.getActiveTeams';
+import isCoach from '@salesforce/apex/UserRoleHelper.isCoach';
+import isPlayer from '@salesforce/apex/UserRoleHelper.isPlayer';
 import ID_FIELD from '@salesforce/schema/SportAttendance__c.Id';
 import STATUS_FIELD from '@salesforce/schema/SportAttendance__c.Status__c';
 import NOTES_FIELD from '@salesforce/schema/SportAttendance__c.Notes__c';
@@ -18,6 +20,8 @@ export default class AttendanceManagement extends LightningElement {
     @track attendanceRecords = [];
     @track draftValues = [];
     @track unsavedChanges = false;
+    @track isCoachUser = false;
+    @track isPlayerUser = false;
 
     teamOptions = [];
     trainingOptions = [];
@@ -27,33 +31,6 @@ export default class AttendanceManagement extends LightningElement {
         { label: 'Obecny', value: 'Obecny' },
         { label: 'Nieobecny', value: 'Nieobecny' },
         { label: 'Usprawiedliwiony', value: 'Usprawiedliwiony' }
-    ];
-
-    columns = [
-        { 
-            label: 'Nr', 
-            fieldName: 'JerseyNumber', 
-            type: 'number',
-            initialWidth: 60
-        },
-        { label: 'Zawodnik', fieldName: 'PlayerName', type: 'text' },
-        { 
-            label: 'Status', 
-            fieldName: 'Status__c', 
-            type: 'picklistColumn',
-            typeAttributes: {
-                placeholder: 'Wybierz status',
-                options: { fieldName: 'statusOptions' },
-                value: { fieldName: 'Status__c' },
-                context: { fieldName: 'Id' }
-            },
-            editable: true
-        },
-        { label: 'Notatki', fieldName: 'Notes__c', type: 'text', editable: true },
-        {
-            type: 'action',
-            typeAttributes: { rowActions: this.getRowActions }
-        }
     ];
 
     @wire(CurrentPageReference)
@@ -67,6 +44,60 @@ export default class AttendanceManagement extends LightningElement {
             }
         }
     }
+
+    @wire(isCoach)
+    wiredIsCoach({ error, data }) {
+        if (data !== undefined) {
+            this.isCoachUser = data;
+            this.updateColumns();
+        }
+    }
+
+    @wire(isPlayer)
+    wiredIsPlayer({ error, data }) {
+        if (data !== undefined) {
+            this.isPlayerUser = data;
+            this.updateColumns();
+        }
+    }
+
+    updateColumns() {
+        const baseColumns = [
+            { 
+                label: 'Nr', 
+                fieldName: 'JerseyNumber', 
+                type: 'number',
+                initialWidth: 60
+            },
+            { label: 'Zawodnik', fieldName: 'PlayerName', type: 'text' },
+            { label: 'Status', fieldName: 'Status__c', type: 'text' },
+            { label: 'Notatki', fieldName: 'Notes__c', type: 'text' }
+        ];
+
+        if (this.isCoachUser) {
+            baseColumns[2] = { 
+                label: 'Status', 
+                fieldName: 'Status__c', 
+                type: 'picklistColumn',
+                typeAttributes: {
+                    placeholder: 'Wybierz status',
+                    options: { fieldName: 'statusOptions' },
+                    value: { fieldName: 'Status__c' },
+                    context: { fieldName: 'Id' }
+                },
+                editable: true
+            };
+            baseColumns[3].editable = true;
+            baseColumns.push({
+                type: 'action',
+                typeAttributes: { rowActions: this.getRowActions }
+            });
+        }
+
+        this.columns = baseColumns;
+    }
+
+    columns = [];
 
     getRowActions(row, doneCallback) {
         const actions = [];
@@ -186,6 +217,11 @@ export default class AttendanceManagement extends LightningElement {
     }
 
     async quickUpdateStatus(recordId, newStatus) {
+        if (!this.isCoachUser) {
+            this.showToast('Błąd', 'Nie masz uprawnień do edycji frekwencji', 'error');
+            return;
+        }
+        
         try {
             const fields = {};
             fields[ID_FIELD.fieldApiName] = recordId;
@@ -207,6 +243,10 @@ export default class AttendanceManagement extends LightningElement {
     }
 
     markAllPresent() {
+        if (!this.isCoachUser) {
+            this.showToast('Błąd', 'Nie masz uprawnień do edycji frekwencji', 'error');
+            return;
+        }
         if (confirm('Czy na pewno chcesz oznaczyć wszystkich jako obecnych?')) {
             const updates = this.attendanceRecords.map(record => ({
                 id: record.Id,
@@ -219,6 +259,10 @@ export default class AttendanceManagement extends LightningElement {
     }
 
     markAllAbsent() {
+        if (!this.isCoachUser) {
+            this.showToast('Błąd', 'Nie masz uprawnień do edycji frekwencji', 'error');
+            return;
+        }
         if (confirm('Czy na pewno chcesz oznaczyć wszystkich jako nieobecnych?')) {
             const updates = this.attendanceRecords.map(record => ({
                 id: record.Id,
@@ -243,6 +287,11 @@ export default class AttendanceManagement extends LightningElement {
     }
 
     async handleSave(event) {
+        if (!this.isCoachUser) {
+            this.showToast('Błąd', 'Nie masz uprawnień do edycji frekwencji', 'error');
+            return;
+        }
+        
         try {
             const draftValues = event.detail.draftValues;
             const recordInputs = draftValues.map(draft => {
@@ -292,6 +341,10 @@ export default class AttendanceManagement extends LightningElement {
     get attendancePercentage() {
         if (this.attendanceRecords.length === 0) return 0;
         return Math.round((this.presentCount / this.attendanceRecords.length) * 100);
+    }
+
+    get canEdit() {
+        return this.isCoachUser;
     }
 
     showToast(title, message, variant) {

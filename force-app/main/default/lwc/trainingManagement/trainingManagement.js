@@ -8,6 +8,8 @@ import updateTraining from '@salesforce/apex/TrainingController.updateTraining';
 import deleteTraining from '@salesforce/apex/TrainingController.deleteTraining';
 import getUpcomingTrainings from '@salesforce/apex/TrainingController.getUpcomingTrainings';
 import getCoaches from '@salesforce/apex/TrainingController.getCoaches';
+import isCoach from '@salesforce/apex/UserRoleHelper.isCoach';
+import isAdmin from '@salesforce/apex/UserRoleHelper.isAdmin';
 
 export default class TrainingManagement extends NavigationMixin(LightningElement) {
     @track selectedTeamId = '';
@@ -15,6 +17,7 @@ export default class TrainingManagement extends NavigationMixin(LightningElement
     @track isModalOpen = false;
     @track isEditMode = false;
     @track editingTrainingId = null;
+    @track hasAccess = false;
     @track newTraining = {
         teamId: '',
         date: '',
@@ -59,6 +62,20 @@ export default class TrainingManagement extends NavigationMixin(LightningElement
             { label: 'Lista obecności', name: 'attendance' }
         ];
         doneCallback(actions);
+    }
+
+    @wire(isAdmin)
+    wiredIsAdmin({ error, data }) {
+        if (data !== undefined) {
+            this.hasAccess = data;
+        }
+    }
+
+    @wire(isCoach)
+    wiredIsCoach({ error, data }) {
+        if (data !== undefined && !this.hasAccess) {
+            this.hasAccess = data;
+        }
     }
 
     @wire(getCoaches)
@@ -134,6 +151,11 @@ export default class TrainingManagement extends NavigationMixin(LightningElement
     }
 
     handleEdit(training) {
+        if (!this.hasAccess) {
+            this.showToast('Błąd', 'Nie masz uprawnień do zarządzania treningami', 'error');
+            return;
+        }
+        
         this.isEditMode = true;
         this.editingTrainingId = training.Id;
         
@@ -159,6 +181,11 @@ export default class TrainingManagement extends NavigationMixin(LightningElement
     }
 
     async handleDelete(trainingId) {
+        if (!this.hasAccess) {
+            this.showToast('Błąd', 'Nie masz uprawnień do zarządzania treningami', 'error');
+            return;
+        }
+        
         if (confirm('Czy na pewno chcesz usunąć ten trening?')) {
             try {
                 await deleteTraining({ trainingId });
@@ -176,6 +203,10 @@ export default class TrainingManagement extends NavigationMixin(LightningElement
     }
 
     openModal() {
+        if (!this.hasAccess) {
+            this.showToast('Błąd', 'Nie masz uprawnień do zarządzania treningami', 'error');
+            return;
+        }
         this.isModalOpen = true;
         this.isEditMode = false;
         this.editingTrainingId = null;
@@ -209,6 +240,11 @@ export default class TrainingManagement extends NavigationMixin(LightningElement
     }
 
     async handleSave() {
+        if (!this.hasAccess) {
+            this.showToast('Błąd', 'Nie masz uprawnień do zarządzania treningami', 'error');
+            return;
+        }
+        
         try {
             if (!this.newTraining.teamId || !this.newTraining.date || !this.newTraining.startTime || !this.newTraining.type) {
                 this.showToast('Błąd', 'Wszystkie pola oprócz czasu trwania są wymagane', 'error');
