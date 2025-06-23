@@ -1,7 +1,8 @@
-import { LightningElement, track, wire } from 'lwc';
+import { LightningElement, track, wire, api } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { refreshApex } from '@salesforce/apex';
 import { updateRecord } from 'lightning/uiRecordApi';
+import { CurrentPageReference } from 'lightning/navigation';
 import getUpcomingTrainings from '@salesforce/apex/TrainingController.getUpcomingTrainings';
 import getTrainingAttendance from '@salesforce/apex/AttendanceManager.getTrainingAttendance';
 import updateBulkAttendance from '@salesforce/apex/AttendanceManager.updateBulkAttendance';
@@ -55,6 +56,18 @@ export default class AttendanceManagement extends LightningElement {
         }
     ];
 
+    @wire(CurrentPageReference)
+    getStateParameters(currentPageReference) {
+        if (currentPageReference && currentPageReference.state) {
+            if (currentPageReference.state.c__teamId) {
+                this.selectedTeamId = currentPageReference.state.c__teamId;
+            }
+            if (currentPageReference.state.c__trainingId) {
+                this.selectedTrainingId = currentPageReference.state.c__trainingId;
+            }
+        }
+    }
+
     getRowActions(row, doneCallback) {
         const actions = [];
         if (row.Status__c !== 'Obecny') {
@@ -89,7 +102,6 @@ export default class AttendanceManagement extends LightningElement {
         if (result.data) {
             this.trainings = result.data;
             this.trainingOptions = result.data.map(training => {
-                // Formatowanie czasu
                 let timeStr = '';
                 if (training.Start_Time__c) {
                     const totalMilliseconds = training.Start_Time__c;

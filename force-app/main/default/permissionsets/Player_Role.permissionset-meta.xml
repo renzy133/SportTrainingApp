@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Permissions for Players - can view trainings, their own attendance and team information</description>
+    <hasActivationRequired>false</hasActivationRequired>
+    <label>Player Role</label>
+    
+    <objectPermissions>
+        <allowCreate>false</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>false</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>SportTraining__c</object>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
+    
+    <objectPermissions>
+        <allowCreate>false</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>false</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>SportAttendance__c</object>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
+    
+    <objectPermissions>
+        <allowCreate>false</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>false</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>SportTeam__c</object>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
+    
+    <objectPermissions>
+        <allowCreate>false</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>false</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>SportPlayer__c</object>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
+    
+    <tabSettings>
+        <tab>SportTraining__c</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
+    
+    <tabSettings>
+        <tab>SportAttendance__c</tab>
+        <visibility>Available</visibility>
+    </tabSettings>
+    
+    <tabSettings>
+        <tab>SportTeam__c</tab>
+        <visibility>Available</visibility>
+    </tabSettings>
+    
+    <tabSettings>
+        <tab>SportPlayer__c</tab>
+        <visibility>Available</visibility>
+    </tabSettings>
+    
+    <applicationVisibilities>
+        <application>Sports_Training_Management</application>
+        <visible>true</visible>
+    </applicationVisibilities>
+</PermissionSet>

@@ -1,6 +1,7 @@
 import { LightningElement, track, wire } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { refreshApex } from '@salesforce/apex';
+import { NavigationMixin } from 'lightning/navigation';
 import getActiveTeams from '@salesforce/apex/TeamController.getActiveTeams';
 import createTraining from '@salesforce/apex/TrainingController.createTraining';
 import updateTraining from '@salesforce/apex/TrainingController.updateTraining';
@@ -8,7 +9,7 @@ import deleteTraining from '@salesforce/apex/TrainingController.deleteTraining';
 import getUpcomingTrainings from '@salesforce/apex/TrainingController.getUpcomingTrainings';
 import getCoaches from '@salesforce/apex/TrainingController.getCoaches';
 
-export default class TrainingManagement extends LightningElement {
+export default class TrainingManagement extends NavigationMixin(LightningElement) {
     @track selectedTeamId = '';
     @track trainings = [];
     @track isModalOpen = false;
@@ -89,10 +90,8 @@ export default class TrainingManagement extends LightningElement {
         this.wiredTrainingsResult = result;
         if (result.data && this.selectedTeamId) {
             this.trainings = result.data.map(training => {
-                // Formatowanie czasu
                 let formattedTime = '';
                 if (training.Start_Time__c) {
-                    // Start_Time__c przychodzi jako liczba milisekund od północy
                     const totalMilliseconds = training.Start_Time__c;
                     const totalSeconds = Math.floor(totalMilliseconds / 1000);
                     const hours = Math.floor(totalSeconds / 3600);
@@ -128,8 +127,7 @@ export default class TrainingManagement extends LightningElement {
                 this.handleEdit(row);
                 break;
             case 'attendance':
-                // Przekierowanie do zarządzania frekwencją
-                this.navigateToAttendance(row.Id);
+                this.navigateToAttendance(row.Id, row.Team__c);
                 break;
             default:
         }
@@ -139,7 +137,6 @@ export default class TrainingManagement extends LightningElement {
         this.isEditMode = true;
         this.editingTrainingId = training.Id;
         
-        // Konwersja czasu z milisekund na format HH:MM
         let timeString = '';
         if (training.Start_Time__c) {
             const totalMilliseconds = training.Start_Time__c;
@@ -173,10 +170,9 @@ export default class TrainingManagement extends LightningElement {
         }
     }
 
-    navigateToAttendance(trainingId) {
-        // Tu możesz dodać nawigację do komponentu frekwencji
-        // Na razie tylko komunikat
-        this.showToast('Info', 'Przejdź do zakładki Zarządzanie Frekwencją i wybierz ten trening', 'info');
+    navigateToAttendance(trainingId, teamId) {
+        const url = `/lightning/o/SportAttendance__c/list?c__trainingId=${trainingId}&c__teamId=${teamId}`;
+        window.open(url, '_blank');
     }
 
     openModal() {
