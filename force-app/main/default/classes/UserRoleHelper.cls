@@ -1,59 +1,70 @@
 public class UserRoleHelper {
     
-    public enum UserRole { ADMIN, COACH, PLAYER, NONE }
-    
     @AuraEnabled(cacheable=true)
-    public static UserRole getCurrentUserRole() {
+    public static String getCurrentUserRole() {
         Id currentUserId = UserInfo.getUserId();
+        
+        // Отладка - получаем все Permission Sets пользователя
+        List<PermissionSetAssignment> allAssignments = [
+            SELECT PermissionSet.Name, PermissionSet.Label 
+            FROM PermissionSetAssignment 
+            WHERE AssigneeId = :currentUserId
+        ];
+        
+        System.debug('All Permission Sets for user: ' + allAssignments);
         
         List<PermissionSetAssignment> assignments = [
             SELECT PermissionSet.Name 
             FROM PermissionSetAssignment 
             WHERE AssigneeId = :currentUserId 
-            AND PermissionSet.Name IN ('Coach_Role', 'Player_Role')
+            AND (PermissionSet.Name IN ('Coach_Role', 'Player_Role') 
+                 OR PermissionSet.Label IN ('Coach Role', 'Player Role'))
         ];
         
+        System.debug('Matching Permission Sets: ' + assignments);
+        
         for(PermissionSetAssignment assignment : assignments) {
-            if(assignment.PermissionSet.Name == 'Coach_Role') {
-                return UserRole.COACH;
+            if(assignment.PermissionSet.Name == 'Coach_Role' || assignment.PermissionSet.Name.contains('Coach')) {
+                return 'COACH';
             }
-            if(assignment.PermissionSet.Name == 'Player_Role') {
-                return UserRole.PLAYER;
+            if(assignment.PermissionSet.Name == 'Player_Role' || assignment.PermissionSet.Name.contains('Player')) {
+                return 'PLAYER';
             }
         }
         
         if(UserInfo.getProfileId() == [SELECT Id FROM Profile WHERE Name = 'System Administrator' LIMIT 1].Id) {
-            return UserRole.ADMIN;
+            return 'ADMIN';
         }
         
-        return UserRole.NONE;
+        return 'NONE';
     }
     
     @AuraEnabled(cacheable=true)
     public static Boolean isCoach() {
-        return getCurrentUserRole() == UserRole.COACH || getCurrentUserRole() == UserRole.ADMIN;
+        String role = getCurrentUserRole();
+        return role == 'COACH' || role == 'ADMIN';
     }
     
     @AuraEnabled(cacheable=true)
     public static Boolean isPlayer() {
-        return getCurrentUserRole() == UserRole.PLAYER;
+        return getCurrentUserRole() == 'PLAYER';
     }
     
     @AuraEnabled(cacheable=true)
     public static Boolean isAdmin() {
-        return getCurrentUserRole() == UserRole.ADMIN;
+        return getCurrentUserRole() == 'ADMIN';
     }
     
     @AuraEnabled(cacheable=true)
     public static List<SportTeam__c> getAccessibleTeams() {
-        UserRole role = getCurrentUserRole();
+        String role = getCurrentUserRole();
         Id currentUserId = UserInfo.getUserId();
         
-        if(role == UserRole.ADMIN) {
+        if(role == 'ADMIN') {
             return [SELECT Id, Name, Sport__c, Category__c FROM SportTeam__c WHERE Active__c = true];
         }
         
-        if(role == UserRole.COACH) {
+        if(role == 'COACH') {
             Set<Id> teamIds = new Set<Id>();
             
             for(SportTeam__c team : [SELECT Id FROM SportTeam__c WHERE Team_Coach__c = :currentUserId AND Active__c = true]) {
@@ -77,7 +88,7 @@ public class UserRoleHelper {
             ];
         }
         
-        if(role == UserRole.PLAYER) {
+        if(role == 'PLAYER') {
             Set<Id> teamIds = new Set<Id>();
             String currentUserName = UserInfo.getName();
             
@@ -109,5 +120,25 @@ public class UserRoleHelper {
             WHERE Name = :UserInfo.getName()
             LIMIT 1
         ];
+    }
+    
+    // Метод для отладки - можно вызвать из Developer Console
+    public static void debugUserPermissions() {
+        Id currentUserId = UserInfo.getUserId();
+        System.debug('Current User ID: ' + currentUserId);
+        System.debug('Current User Name: ' + UserInfo.getName());
+        
+        List<PermissionSetAssignment> allAssignments = [
+            SELECT PermissionSet.Name, PermissionSet.Label 
+            FROM PermissionSetAssignment 
+            WHERE AssigneeId = :currentUserId
+        ];
+        
+        System.debug('All Permission Set Assignments:');
+        for(PermissionSetAssignment psa : allAssignments) {
+            System.debug('- Name: ' + psa.PermissionSet.Name + ', Label: ' + psa.PermissionSet.Label);
+        }
+        
+        System.debug('Current Role: ' + getCurrentUserRole());
     }
 }
