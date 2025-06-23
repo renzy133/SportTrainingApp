@@ -18,6 +18,22 @@
                         onchange={handleTrainingChange}>
                     </lightning-combobox>
                 </div>
+                <div class="slds-col slds-size_1-of-3 slds-text-align_right">
+                    <template if:true={hasAttendanceData}>
+                        <lightning-button-group>
+                            <lightning-button 
+                                label="Wszyscy obecni" 
+                                onclick={markAllPresent}
+                                variant="success">
+                            </lightning-button>
+                            <lightning-button 
+                                label="Wszyscy nieobecni" 
+                                onclick={markAllAbsent}
+                                variant="destructive">
+                            </lightning-button>
+                        </lightning-button-group>
+                    </template>
+                </div>
             </div>
 
             <template if:true={hasAttendanceData}>
@@ -41,6 +57,12 @@
                             <div>Usprawiedliwieni</div>
                         </div>
                     </div>
+                    <div class="slds-col slds-size_1-of-4">
+                        <div class="slds-box slds-theme_default slds-text-align_center">
+                            <div class="slds-text-heading_large">{attendancePercentage}%</div>
+                            <div>Frekwencja</div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Tabela frekwencji -->
@@ -51,7 +73,10 @@
                     hide-checkbox-column="true"
                     onsave={handleSave}
                     oncancel={handleCancel}
-                    draft-values={draftValues}>
+                    oncellchange={handleCellChange}
+                    onrowaction={handleRowAction}
+                    draft-values={draftValues}
+                    suppress-bottom-bar="true">
                 </lightning-datatable>
             </template>
 

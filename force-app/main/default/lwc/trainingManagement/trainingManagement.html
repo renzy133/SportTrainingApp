@@ -24,7 +24,8 @@
                 key-field="Id"
                 data={trainings}
                 columns={columns}
-                hide-checkbox-column="true">
+                hide-checkbox-column="true"
+                onrowaction={handleRowAction}>
             </lightning-datatable>
         </div>
     </lightning-card>
@@ -34,7 +35,7 @@
         <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open">
             <div class="slds-modal__container">
                 <header class="slds-modal__header">
-                    <h2 class="slds-text-heading_medium">Nowy Trening</h2>
+                    <h2 class="slds-text-heading_medium">{modalTitle}</h2>
                     <lightning-button-icon 
                         icon-name="utility:close" 
                         onclick={closeModal}
@@ -52,6 +53,15 @@
                         data-field="teamId"
                         onchange={handleInputChange}
                         required>
+                    </lightning-combobox>
+                    
+                    <lightning-combobox
+                        label="Trener"
+                        value={newTraining.coachId}
+                        options={coachOptions}
+                        data-field="coachId"
+                        onchange={handleInputChange}
+                        placeholder="Wybierz trenera">
                     </lightning-combobox>
                     
                     <lightning-input 
@@ -97,7 +107,7 @@
                         onclick={closeModal}>
                     </lightning-button>
                     <lightning-button 
-                        label="Zapisz" 
+                        label={saveButtonLabel}
                         variant="brand"
                         onclick={handleSave}>
                     </lightning-button>

@@ -4,6 +4,7 @@ import { refreshApex } from '@salesforce/apex';
 import { updateRecord } from 'lightning/uiRecordApi';
 import getUpcomingTrainings from '@salesforce/apex/TrainingController.getUpcomingTrainings';
 import getTrainingAttendance from '@salesforce/apex/AttendanceManager.getTrainingAttendance';
+import updateBulkAttendance from '@salesforce/apex/AttendanceManager.updateBulkAttendance';
 import getActiveTeams from '@salesforce/apex/TeamController.getActiveTeams';
 import ID_FIELD from '@salesforce/schema/SportAttendance__c.Id';
 import STATUS_FIELD from '@salesforce/schema/SportAttendance__c.Status__c';
@@ -14,10 +15,12 @@ export default class AttendanceManagement extends LightningElement {
     @track selectedTrainingId = '';
     @track trainings = [];
     @track attendanceRecords = [];
-    @track editMode = false;
+    @track draftValues = [];
+    @track unsavedChanges = false;
 
     teamOptions = [];
     trainingOptions = [];
+    wiredAttendanceResult;
 
     statusOptions = [
         { label: 'Obecny', value: 'Obecny' },
@@ -26,6 +29,12 @@ export default class AttendanceManagement extends LightningElement {
     ];
 
     columns = [
+        { 
+            label: 'Nr', 
+            fieldName: 'JerseyNumber', 
+            type: 'number',
+            initialWidth: 60
+        },
         { label: 'Zawodnik', fieldName: 'PlayerName', type: 'text' },
         { 
             label: 'Status', 
@@ -39,8 +48,26 @@ export default class AttendanceManagement extends LightningElement {
             },
             editable: true
         },
-        { label: 'Notatki', fieldName: 'Notes__c', type: 'text', editable: true }
+        { label: 'Notatki', fieldName: 'Notes__c', type: 'text', editable: true },
+        {
+            type: 'action',
+            typeAttributes: { rowActions: this.getRowActions }
+        }
     ];
+
+    getRowActions(row, doneCallback) {
+        const actions = [];
+        if (row.Status__c !== 'Obecny') {
+            actions.push({ label: 'Oznacz jako obecny', name: 'mark_present' });
+        }
+        if (row.Status__c !== 'Nieobecny') {
+            actions.push({ label: 'Oznacz jako nieobecny', name: 'mark_absent' });
+        }
+        if (row.Status__c !== 'Usprawiedliwiony') {
+            actions.push({ label: 'Usprawiedliw', name: 'mark_excused' });
+        }
+        doneCallback(actions);
+    }
 
     @wire(getActiveTeams)
     wiredTeams(result) {
@@ -61,10 +88,22 @@ export default class AttendanceManagement extends LightningElement {
         this.wiredTrainingsResult = result;
         if (result.data) {
             this.trainings = result.data;
-            this.trainingOptions = result.data.map(training => ({
-                label: `${training.Name} - ${training.Training_Date__c} ${training.Start_Time__c || ''}`,
-                value: training.Id
-            }));
+            this.trainingOptions = result.data.map(training => {
+                // Formatowanie czasu
+                let timeStr = '';
+                if (training.Start_Time__c) {
+                    const totalMilliseconds = training.Start_Time__c;
+                    const totalSeconds = Math.floor(totalMilliseconds / 1000);
+                    const hours = Math.floor(totalSeconds / 3600);
+                    const minutes = Math.floor((totalSeconds % 3600) / 60);
+                    timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                }
+                
+                return {
+                    label: `${training.Name} - ${training.Training_Date__c} ${timeStr}`,
+                    value: training.Id
+                };
+            });
             
             if (this.trainingOptions.length > 0 && !this.selectedTrainingId) {
                 this.selectedTrainingId = this.trainingOptions[0].value;
@@ -79,25 +118,116 @@ export default class AttendanceManagement extends LightningElement {
             this.attendanceRecords = result.data.map(record => ({
                 ...record,
                 PlayerName: record.Player__r ? record.Player__r.Name : '',
+                JerseyNumber: record.Player__r ? record.Player__r.Jersey_Number__c : null,
                 statusOptions: this.statusOptions
             }));
+            this.unsavedChanges = false;
         } else if (result.error) {
             this.showToast('Błąd', 'Nie udało się pobrać listy obecności', 'error');
         }
     }
 
     handleTeamChange(event) {
+        if (this.unsavedChanges && !confirm('Masz niezapisane zmiany. Czy na pewno chcesz zmienić drużynę?')) {
+            event.target.value = this.selectedTeamId;
+            return;
+        }
+        
         this.selectedTeamId = event.detail.value;
         this.selectedTrainingId = '';
         this.attendanceRecords = [];
+        this.draftValues = [];
+        this.unsavedChanges = false;
     }
 
     handleTrainingChange(event) {
+        if (this.unsavedChanges && !confirm('Masz niezapisane zmiany. Czy na pewno chcesz zmienić trening?')) {
+            event.target.value = this.selectedTrainingId;
+            return;
+        }
+        
         this.selectedTrainingId = event.detail.value;
+        this.draftValues = [];
+        this.unsavedChanges = false;
     }
 
-    toggleEditMode() {
-        this.editMode = !this.editMode;
+    handleRowAction(event) {
+        const actionName = event.detail.action.name;
+        const row = event.detail.row;
+        let newStatus = '';
+        
+        switch (actionName) {
+            case 'mark_present':
+                newStatus = 'Obecny';
+                break;
+            case 'mark_absent':
+                newStatus = 'Nieobecny';
+                break;
+            case 'mark_excused':
+                newStatus = 'Usprawiedliwiony';
+                break;
+            default:
+                return;
+        }
+        
+        this.quickUpdateStatus(row.Id, newStatus);
+    }
+
+    async quickUpdateStatus(recordId, newStatus) {
+        try {
+            const fields = {};
+            fields[ID_FIELD.fieldApiName] = recordId;
+            fields[STATUS_FIELD.fieldApiName] = newStatus;
+            
+            const recordInput = { fields };
+            await updateRecord(recordInput);
+            
+            this.showToast('Sukces', 'Status został zaktualizowany', 'success');
+            refreshApex(this.wiredAttendanceResult);
+            
+        } catch (error) {
+            this.showToast('Błąd', 'Nie udało się zaktualizować statusu', 'error');
+        }
+    }
+
+    handleCellChange(event) {
+        this.unsavedChanges = true;
+    }
+
+    markAllPresent() {
+        if (confirm('Czy na pewno chcesz oznaczyć wszystkich jako obecnych?')) {
+            const updates = this.attendanceRecords.map(record => ({
+                id: record.Id,
+                status: 'Obecny',
+                notes: record.Notes__c || ''
+            }));
+            
+            this.bulkUpdate(updates);
+        }
+    }
+
+    markAllAbsent() {
+        if (confirm('Czy na pewno chcesz oznaczyć wszystkich jako nieobecnych?')) {
+            const updates = this.attendanceRecords.map(record => ({
+                id: record.Id,
+                status: 'Nieobecny',
+                notes: record.Notes__c || ''
+            }));
+            
+            this.bulkUpdate(updates);
+        }
+    }
+
+    async bulkUpdate(updates) {
+        try {
+            await updateBulkAttendance({ attendanceData: updates });
+            this.showToast('Sukces', 'Lista obecności została zaktualizowana', 'success');
+            this.draftValues = [];
+            this.unsavedChanges = false;
+            refreshApex(this.wiredAttendanceResult);
+        } catch (error) {
+            this.showToast('Błąd', 'Nie udało się zaktualizować listy obecności', 'error');
+        }
     }
 
     async handleSave(event) {
@@ -116,7 +246,8 @@ export default class AttendanceManagement extends LightningElement {
 
             this.showToast('Sukces', 'Lista obecności została zaktualizowana', 'success');
             
-            this.template.querySelector('lightning-datatable').draftValues = [];
+            this.draftValues = [];
+            this.unsavedChanges = false;
             
             refreshApex(this.wiredAttendanceResult);
             
@@ -126,7 +257,8 @@ export default class AttendanceManagement extends LightningElement {
     }
 
     handleCancel() {
-        this.template.querySelector('lightning-datatable').draftValues = [];
+        this.draftValues = [];
+        this.unsavedChanges = false;
     }
 
     get hasAttendanceData() {
@@ -143,6 +275,11 @@ export default class AttendanceManagement extends LightningElement {
 
     get excusedCount() {
         return this.attendanceRecords.filter(record => record.Status__c === 'Usprawiedliwiony').length;
+    }
+
+    get attendancePercentage() {
+        if (this.attendanceRecords.length === 0) return 0;
+        return Math.round((this.presentCount / this.attendanceRecords.length) * 100);
     }
 
     showToast(title, message, variant) {

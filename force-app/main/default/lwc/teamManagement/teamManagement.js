@@ -3,15 +3,22 @@ import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { refreshApex } from '@salesforce/apex';
 import getActiveTeams from '@salesforce/apex/TeamController.getActiveTeams';
 import createTeam from '@salesforce/apex/TeamController.createTeam';
+import updateTeam from '@salesforce/apex/TeamController.updateTeam';
+import deleteTeam from '@salesforce/apex/TeamController.deleteTeam';
 
 export default class TeamManagement extends LightningElement {
     @track teams = [];
     @track isModalOpen = false;
+    @track isEditMode = false;
+    @track editingTeamId = null;
     @track newTeam = {
         name: '',
         sport: '',
-        category: ''
+        category: '',
+        active: true
     };
+
+    wiredTeamsResult;
 
     sportOptions = [
         { label: 'Football', value: 'Football' },
@@ -30,35 +37,107 @@ export default class TeamManagement extends LightningElement {
         { label: 'Nazwa Drużyny', fieldName: 'Name', type: 'text' },
         { label: 'Sport', fieldName: 'Sport__c', type: 'text' },
         { label: 'Kategoria', fieldName: 'Category__c', type: 'text' },
-        { label: 'Trener', fieldName: 'CoachName', type: 'text' },
-        { label: 'Aktywna', fieldName: 'Active__c', type: 'boolean' }
+        { label: 'Aktywna', fieldName: 'Active__c', type: 'boolean' },
+        {
+            type: 'action',
+            typeAttributes: { rowActions: this.getRowActions }
+        }
     ];
+
+    getRowActions(row, doneCallback) {
+        const actions = [
+            { label: 'Edytuj', name: 'edit' },
+            { label: 'Usuń', name: 'delete' },
+            { label: 'Zobacz zawodników', name: 'view_players' }
+        ];
+        doneCallback(actions);
+    }
 
     @wire(getActiveTeams)
     wiredTeams(result) {
         this.wiredTeamsResult = result;
         if (result.data) {
-            this.teams = result.data.map(team => ({
-                ...team,
-                CoachName: team.Team_Coach__r ? team.Team_Coach__r.Name : 'Brak trenera'
-            }));
+            this.teams = result.data;
         } else if (result.error) {
             this.showToast('Błąd', 'Nie udało się pobrać drużyn', 'error');
         }
     }
 
+    handleRowAction(event) {
+        const actionName = event.detail.action.name;
+        const row = event.detail.row;
+        
+        switch (actionName) {
+            case 'delete':
+                this.handleDelete(row.Id);
+                break;
+            case 'edit':
+                this.handleEdit(row);
+                break;
+            case 'view_players':
+                this.viewPlayers(row.Id);
+                break;
+            default:
+        }
+    }
+
+    handleEdit(team) {
+        this.isEditMode = true;
+        this.editingTeamId = team.Id;
+        
+        this.newTeam = {
+            name: team.Name,
+            sport: team.Sport__c,
+            category: team.Category__c,
+            active: team.Active__c
+        };
+        
+        this.isModalOpen = true;
+    }
+
+    async handleDelete(teamId) {
+        if (confirm('Czy na pewno chcesz usunąć tę drużynę?')) {
+            try {
+                await deleteTeam({ teamId });
+                this.showToast('Sukces', 'Drużyna została usunięta', 'success');
+                refreshApex(this.wiredTeamsResult);
+            } catch (error) {
+                this.showToast('Błąd', error.body.message, 'error');
+            }
+        }
+    }
+
+    viewPlayers(teamId) {
+        // Tu możesz dodać nawigację do listy zawodników
+        this.showToast('Info', 'Funkcja w przygotowaniu - lista zawodników drużyny', 'info');
+    }
+
     openModal() {
         this.isModalOpen = true;
+        this.isEditMode = false;
+        this.editingTeamId = null;
+        this.newTeam = {
+            name: '',
+            sport: '',
+            category: '',
+            active: true
+        };
     }
 
     closeModal() {
         this.isModalOpen = false;
-        this.newTeam = { name: '', sport: '', category: '' };
+        this.isEditMode = false;
+        this.editingTeamId = null;
+        this.newTeam = { name: '', sport: '', category: '', active: true };
     }
 
     handleInputChange(event) {
         const field = event.target.dataset.field;
-        this.newTeam[field] = event.target.value;
+        if (field === 'active') {
+            this.newTeam[field] = event.target.checked;
+        } else {
+            this.newTeam[field] = event.target.value;
+        }
     }
 
     async handleSave() {
@@ -68,18 +147,37 @@ export default class TeamManagement extends LightningElement {
                 return;
             }
 
-            await createTeam({
-                teamName: this.newTeam.name,
-                sport: this.newTeam.sport,
-                category: this.newTeam.category
-            });
+            if (this.isEditMode) {
+                await updateTeam({
+                    teamId: this.editingTeamId,
+                    teamName: this.newTeam.name,
+                    sport: this.newTeam.sport,
+                    category: this.newTeam.category,
+                    active: this.newTeam.active
+                });
+                this.showToast('Sukces', 'Drużyna została zaktualizowana', 'success');
+            } else {
+                await createTeam({
+                    teamName: this.newTeam.name,
+                    sport: this.newTeam.sport,
+                    category: this.newTeam.category
+                });
+                this.showToast('Sukces', 'Drużyna została utworzona', 'success');
+            }
 
-            this.showToast('Sukces', 'Drużyna została utworzona', 'success');
             this.closeModal();
             refreshApex(this.wiredTeamsResult);
         } catch (error) {
             this.showToast('Błąd', error.body.message, 'error');
         }
+    }
+
+    get modalTitle() {
+        return this.isEditMode ? 'Edytuj Drużynę' : 'Nowa Drużyna';
+    }
+
+    get saveButtonLabel() {
+        return this.isEditMode ? 'Zaktualizuj' : 'Zapisz';
     }
 
     showToast(title, message, variant) {
