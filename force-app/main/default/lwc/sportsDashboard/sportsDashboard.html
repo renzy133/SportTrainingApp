@@ -1,44 +1,107 @@
 <template>
-    <lightning-card title="Dashboard Sportowy" icon-name="standard:dashboard">
+    <lightning-card title={dashboardTitle} icon-name="standard:dashboard">
         <div class="slds-p-horizontal_medium">
-            <!-- Statystyki ogólne -->
-            <div class="slds-grid slds-gutters slds-m-bottom_large">
-                <div class="slds-col slds-size_1-of-3">
-                    <div class="slds-box slds-theme_default slds-text-align_center">
-                        <lightning-icon icon-name="standard:groups" size="large" class="slds-m-bottom_small"></lightning-icon>
-                        <div class="slds-text-heading_large">{totalTeams}</div>
-                        <div class="slds-text-body_regular">Aktywne Drużyny</div>
+            
+            <!-- Player Personal Info -->
+            <template if:true={isPlayer}>
+                <div class="slds-box slds-theme_info slds-m-bottom_medium">
+                    <div class="slds-text-heading_small slds-m-bottom_small">Moja Drużyna</div>
+                    <div class="slds-grid slds-gutters">
+                        <div class="slds-col slds-size_1-of-3">
+                            <strong>Drużyna:</strong> {myTeamName}
+                        </div>
+                        <div class="slds-col slds-size_1-of-3">
+                            <strong>Sport:</strong> {myTeamSport}
+                        </div>
+                        <div class="slds-col slds-size_1-of-3">
+                            <strong>Numer:</strong> {myJerseyNumber} | <strong>Pozycja:</strong> {myPosition}
+                        </div>
                     </div>
                 </div>
-                <div class="slds-col slds-size_1-of-3">
-                    <div class="slds-box slds-theme_default slds-text-align_center">
-                        <lightning-icon icon-name="standard:person_account" size="large" class="slds-m-bottom_small"></lightning-icon>
-                        <div class="slds-text-heading_large">{totalActivePlayers}</div>
-                        <div class="slds-text-body_regular">Zawodnicy</div>
-                    </div>
-                </div>
-                <div class="slds-col slds-size_1-of-3">
-                    <div class="slds-box slds-theme_default slds-text-align_center">
-                        <lightning-icon icon-name="standard:event" size="large" class="slds-m-bottom_small"></lightning-icon>
-                        <div class="slds-text-heading_large">{upcomingTrainings}</div>
-                        <div class="slds-text-body_regular">Nadchodzące Treningi</div>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Wykresy -->
-            <div class="slds-grid slds-gutters">
-                <div class="slds-col slds-size_1-of-2">
-                    <div class="slds-box">
-                        <div data-id="sport-chart"></div>
+                <!-- Player Stats -->
+                <div class="slds-grid slds-gutters slds-m-bottom_medium">
+                    <div class="slds-col slds-size_1-of-4">
+                        <div class="slds-box slds-theme_success slds-text-align_center">
+                            <div class="slds-text-heading_large">{presentCount}</div>
+                            <div class="slds-text-body_small">Obecności</div>
+                        </div>
+                    </div>
+                    <div class="slds-col slds-size_1-of-4">
+                        <div class="slds-box slds-theme_error slds-text-align_center">
+                            <div class="slds-text-heading_large">{absentCount}</div>
+                            <div class="slds-text-body_small">Nieobecności</div>
+                        </div>
+                    </div>
+                    <div class="slds-col slds-size_1-of-4">
+                        <div class="slds-box slds-theme_warning slds-text-align_center">
+                            <div class="slds-text-heading_large">{excusedCount}</div>
+                            <div class="slds-text-body_small">Usprawiedliwione</div>
+                        </div>
+                    </div>
+                    <div class="slds-col slds-size_1-of-4">
+                        <div class="slds-box slds-theme_default slds-text-align_center">
+                            <div class="slds-text-heading_large">{attendancePercentage}%</div>
+                            <div class="slds-text-body_small">Frekwencja</div>
+                        </div>
                     </div>
                 </div>
-                <div class="slds-col slds-size_1-of-2">
-                    <div class="slds-box">
-                        <div data-id="category-chart"></div>
+
+                <!-- Upcoming Trainings for Player -->
+                <template if:true={nextTrainings}>
+                    <div class="slds-box slds-m-bottom_medium">
+                        <div class="slds-text-heading_small slds-m-bottom_small">Nadchodzące Treningi</div>
+                        <template for:each={nextTrainings} for:item="training">
+                            <div key={training.Id} class="slds-media slds-p-around_small" style="border-bottom: 1px solid #dddbda;">
+                                <div class="slds-media__figure">
+                                    <lightning-icon icon-name="standard:event" size="small"></lightning-icon>
+                                </div>
+                                <div class="slds-media__body">
+                                    <div class="slds-grid">
+                                        <div class="slds-col slds-size_1-of-3">
+                                            <strong>{training.formattedDate}</strong>
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-3">
+                                            {training.formattedTime} ({training.Duration__c} min)
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-3">
+                                            <span class="slds-badge">{training.Type__c}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+            </template>
+
+            <!-- Admin/Coach General Stats -->
+            <template if:true={isCoachOrAdmin}>
+                <div class="slds-grid slds-gutters slds-m-bottom_large">
+                    <div class="slds-col slds-size_1-of-3">
+                        <div class="slds-box slds-theme_default slds-text-align_center">
+                            <lightning-icon icon-name="standard:groups" size="large" class="slds-m-bottom_small"></lightning-icon>
+                            <div class="slds-text-heading_large">{totalTeams}</div>
+                            <div class="slds-text-body_regular">Aktywne Drużyny</div>
+                        </div>
+                    </div>
+                    <div class="slds-col slds-size_1-of-3">
+                        <div class="slds-box slds-theme_default slds-text-align_center">
+                            <lightning-icon icon-name="standard:person_account" size="large" class="slds-m-bottom_small"></lightning-icon>
+                            <div class="slds-text-heading_large">{totalActivePlayers}</div>
+                            <div class="slds-text-body_regular">Zawodnicy</div>
+                        </div>
+                    </div>
+                    <div class="slds-col slds-size_1-of-3">
+                        <div class="slds-box slds-theme_default slds-text-align_center">
+                            <lightning-icon icon-name="standard:event" size="large" class="slds-m-bottom_small"></lightning-icon>
+                            <div class="slds-text-heading_large">{upcomingTrainingCount}</div>
+                            <div class="slds-text-body_regular">Nadchodzące Treningi</div>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </template>
+
         </div>
     </lightning-card>
 </template>

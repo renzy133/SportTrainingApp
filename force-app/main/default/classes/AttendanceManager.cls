@@ -26,7 +26,6 @@ public class AttendanceManager {
                 WHERE Team__c = :training.Team__c
             ];
             
-            // Sprawdzamy czy rekordy już istnieją
             Set<Id> existingPlayerIds = new Set<Id>();
             for(SportAttendance__c existing : [
                 SELECT Player__c 
@@ -114,12 +113,14 @@ public class AttendanceManager {
     @AuraEnabled(cacheable=true)
     public static Map<String, Object> getAttendanceStats(Id teamId, Integer days) {
         Date startDate = Date.today().addDays(-days);
+        String currentUserName = UserInfo.getName();
         
         List<AggregateResult> stats = [
             SELECT Status__c, COUNT(Id) cnt
             FROM SportAttendance__c
             WHERE Training__r.Team__c = :teamId
             AND Training__r.Training_Date__c >= :startDate
+            AND Player__r.Name = :currentUserName
             GROUP BY Status__c
         ];
         

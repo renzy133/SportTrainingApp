@@ -6,7 +6,7 @@ import { CurrentPageReference } from 'lightning/navigation';
 import getUpcomingTrainings from '@salesforce/apex/TrainingController.getUpcomingTrainings';
 import getTrainingAttendance from '@salesforce/apex/AttendanceManager.getTrainingAttendance';
 import updateBulkAttendance from '@salesforce/apex/AttendanceManager.updateBulkAttendance';
-import getActiveTeams from '@salesforce/apex/TeamController.getActiveTeams';
+import getAccessibleTeams from '@salesforce/apex/UserRoleHelper.getAccessibleTeams';
 import isCoach from '@salesforce/apex/UserRoleHelper.isCoach';
 import isPlayer from '@salesforce/apex/UserRoleHelper.isPlayer';
 import ID_FIELD from '@salesforce/schema/SportAttendance__c.Id';
@@ -113,7 +113,7 @@ export default class AttendanceManagement extends LightningElement {
         doneCallback(actions);
     }
 
-    @wire(getActiveTeams)
+    @wire(getAccessibleTeams)
     wiredTeams(result) {
         if (result.data) {
             this.teamOptions = result.data.map(team => ({
